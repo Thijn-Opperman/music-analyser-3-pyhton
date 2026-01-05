@@ -210,7 +210,8 @@ def health():
 if __name__ == '__main__':
     # Gebruik PORT environment variable (Railway/Render) of default naar 5001
     port = int(os.environ.get('PORT', 5001))
-    debug = os.environ.get('FLASK_ENV') != 'production'
+    # Debug mode alleen aan als expliciet gevraagd (niet in productie)
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
     print("\n" + "="*50)
     print("🎵 Music Analyzer Web Interface")
