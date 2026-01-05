@@ -78,12 +78,9 @@ def upload_file():
             )
             
             # Genereer URL voor visualisatie
-            if os.environ.get('VERCEL'):
-                # Op Vercel: gebruik een speciale route om images te serveren
-                result['visualization'] = url_for('serve_image', filename=Path(img_path).name)
-            else:
-                # Lokaal: gebruik static folder
-                result['visualization'] = url_for('static', filename=f'analysis_images/{Path(img_path).name}')
+            img_filename = Path(img_path).name
+            # Gebruik altijd de serve_image route voor consistentie (werkt op alle platforms)
+            result['visualization'] = url_for('serve_image', filename=img_filename)
             result['filename'] = filename
             
             return jsonify(result)
@@ -144,7 +141,8 @@ def create_visualization_pro(y, sr, energy, peak_times, filename, bpm, key, mode
 
 @app.route('/image/<filename>')
 def serve_image(filename):
-    """Serve images from /tmp op Vercel"""
+    """Serve images - werkt op Vercel (/tmp) en Railway/lokaal (static folder)"""
+    # Op Vercel: images staan in /tmp
     if os.environ.get('VERCEL'):
         STATIC_IMAGES_BASE = '/tmp'
         img_path = os.path.join(STATIC_IMAGES_BASE, 'static', 'analysis_images', filename)
@@ -152,8 +150,12 @@ def serve_image(filename):
             return send_file(img_path, mimetype='image/png')
         return jsonify({'error': 'Image not found'}), 404
     else:
-        # Lokaal: gebruik normale static route
-        return send_from_directory('static/analysis_images', filename)
+        # Railway/lokaal: gebruik normale static route
+        static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'analysis_images')
+        img_path = os.path.join(static_dir, filename)
+        if os.path.exists(img_path):
+            return send_file(img_path, mimetype='image/png')
+        return jsonify({'error': 'Image not found'}), 404
 
 
 @app.route('/results')
