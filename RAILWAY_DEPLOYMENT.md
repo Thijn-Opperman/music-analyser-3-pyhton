@@ -38,13 +38,31 @@ Railway doet meestal alles automatisch, maar je kunt controleren:
 2. Wacht 2-5 minuten (dependencies installeren duurt even)
 3. Klaar! 🎉
 
-### Stap 5: Open je App
+### Stap 5: Vind je App URL
 
+Railway genereert automatisch een URL voor je app! Je kunt deze op verschillende manieren vinden:
+
+**Methode 1: Via de Service (Aanbevolen)**
+1. Klik op je **project** in Railway dashboard
+2. Klik op de **service** (meestal "music-analyser-3-pyhton" of "web")
+3. Klik op de **"Settings"** tab
+4. Scroll naar **"Networking"** sectie
+5. Je ziet daar je **Public URL** (bijv. `https://jouw-app.up.railway.app`)
+6. Klik op de URL om je app te openen! 🚀
+
+**Methode 2: Via de Deploy Tab**
 1. Klik op je project
-2. Klik op de **"Settings"** tab
-3. Scroll naar **"Domains"**
-4. Klik op **"Generate Domain"** (of gebruik je eigen custom domain)
-5. Je app is live! 🚀
+2. Ga naar de **"Deployments"** tab
+3. Klik op de meest recente deployment
+4. Je ziet daar de **Public URL**
+
+**Methode 3: Custom Domain (Optioneel)**
+1. Ga naar je service → **Settings** → **Networking**
+2. Scroll naar **"Custom Domain"**
+3. Voeg je eigen domain toe (bijv. `muziek-analyzer.nl`)
+4. Volg de DNS instructies
+
+**Je app is nu live!** 🎉
 
 ## 📊 Monitoring
 
