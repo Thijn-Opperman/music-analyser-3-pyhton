@@ -2,7 +2,7 @@
 Flask Web Application voor Music Analyzer
 """
 
-from flask import Flask, render_template, request, jsonify, send_from_directory, send_file, url_for
+from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
 import os
 from pathlib import Path
 from werkzeug.utils import secure_filename
@@ -15,24 +15,14 @@ matplotlib.use('Agg')  # Non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 
-app = Flask(__name__, 
-            static_folder='static',
-            static_url_path='/static',
-            template_folder='templates')
-
-# Gebruik /tmp op Vercel (serverless), anders 'uploads'
-UPLOAD_BASE = '/tmp' if os.environ.get('VERCEL') else os.path.dirname(os.path.abspath(__file__))
-app.config['UPLOAD_FOLDER'] = os.path.join(UPLOAD_BASE, 'uploads')
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 app.config['ALLOWED_EXTENSIONS'] = {'mp3', 'wav', 'm4a', 'flac'}
 
 # Maak uploads folder aan
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# Voor static images, gebruik /tmp op Vercel
-STATIC_IMAGES_BASE = '/tmp' if os.environ.get('VERCEL') else os.path.dirname(os.path.abspath(__file__))
-static_images_dir = os.path.join(STATIC_IMAGES_BASE, 'static', 'analysis_images')
-os.makedirs(static_images_dir, exist_ok=True)
+os.makedirs('static/analysis_images', exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -80,10 +70,7 @@ def upload_file():
                 result.get('camelot', ''), result.get('phrases', {})
             )
             
-            # Genereer URL voor visualisatie
-            img_filename = Path(img_path).name
-            # Gebruik altijd de serve_image route voor consistentie (werkt op alle platforms)
-            result['visualization'] = url_for('serve_image', filename=img_filename)
+            result['visualization'] = url_for('static', filename=f'analysis_images/{Path(img_path).name}')
             result['filename'] = filename
             
             return jsonify(result)
@@ -132,33 +119,11 @@ def create_visualization_pro(y, sr, energy, peak_times, filename, bpm, key, mode
     
     # Sla op
     img_filename = f"{Path(filename).stem}_pro_analysis.png"
-    STATIC_IMAGES_BASE = '/tmp' if os.environ.get('VERCEL') else os.path.dirname(os.path.abspath(__file__))
-    static_images_dir = os.path.join(STATIC_IMAGES_BASE, 'static', 'analysis_images')
-    os.makedirs(static_images_dir, exist_ok=True)
-    img_path = os.path.join(static_images_dir, img_filename)
+    img_path = os.path.join('static/analysis_images', img_filename)
     plt.savefig(img_path, dpi=150, bbox_inches='tight')
     plt.close()
     
     return img_path
-
-
-@app.route('/image/<filename>')
-def serve_image(filename):
-    """Serve images - werkt op Vercel (/tmp) en Railway/lokaal (static folder)"""
-    # Op Vercel: images staan in /tmp
-    if os.environ.get('VERCEL'):
-        STATIC_IMAGES_BASE = '/tmp'
-        img_path = os.path.join(STATIC_IMAGES_BASE, 'static', 'analysis_images', filename)
-        if os.path.exists(img_path):
-            return send_file(img_path, mimetype='image/png')
-        return jsonify({'error': 'Image not found'}), 404
-    else:
-        # Railway/lokaal: gebruik normale static route
-        static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'analysis_images')
-        img_path = os.path.join(static_dir, filename)
-        if os.path.exists(img_path):
-            return send_file(img_path, mimetype='image/png')
-        return jsonify({'error': 'Image not found'}), 404
 
 
 @app.route('/results')
@@ -192,39 +157,12 @@ def get_tracks():
     return jsonify(results)
 
 
-# Error handlers
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({'error': 'Endpoint not found'}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({'error': 'Internal server error'}), 500
-
-# Health check endpoint voor Railway
-@app.route('/health')
-def health():
-    return jsonify({'status': 'ok', 'message': 'Music Analyzer is running'}), 200
-
-
 if __name__ == '__main__':
-    # Gebruik PORT environment variable (Railway/Render) of default naar 5001
-    port = int(os.environ.get('PORT', 5001))
-    # Debug mode alleen aan als expliciet gevraagd (niet in productie)
-    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    
+    port = 5001  # Gebruik 5001 omdat 5000 vaak door AirPlay wordt gebruikt op macOS
     print("\n" + "="*50)
     print("🎵 Music Analyzer Web Interface")
     print("="*50)
-    print(f"Server starting on port {port}")
-    print(f"Debug mode: {debug}")
-    print(f"Static folder: {app.static_folder}")
-    print(f"Template folder: {app.template_folder}")
+    print(f"Open je browser en ga naar: http://localhost:{port}")
     print("="*50 + "\n")
-    
-    try:
-        app.run(debug=debug, host='0.0.0.0', port=port)
-    except Exception as e:
-        print(f"Error starting server: {e}")
-        raise
+    app.run(debug=True, host='0.0.0.0', port=port)
 
