@@ -188,11 +188,14 @@ def get_tracks():
 
 
 if __name__ == '__main__':
-    port = 5001  # Gebruik 5001 omdat 5000 vaak door AirPlay wordt gebruikt op macOS
+    # Gebruik PORT environment variable (Railway/Render) of default naar 5001
+    port = int(os.environ.get('PORT', 5001))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
     print("\n" + "="*50)
     print("🎵 Music Analyzer Web Interface")
     print("="*50)
     print(f"Open je browser en ga naar: http://localhost:{port}")
     print("="*50 + "\n")
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=debug, host='0.0.0.0', port=port)
 
