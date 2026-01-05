@@ -2,7 +2,7 @@
 Flask Web Application voor Music Analyzer
 """
 
-from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file, url_for
 import os
 from pathlib import Path
 from werkzeug.utils import secure_filename
@@ -16,13 +16,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
+
+# Gebruik /tmp op Vercel (serverless), anders 'uploads'
+UPLOAD_BASE = '/tmp' if os.environ.get('VERCEL') else os.path.dirname(os.path.abspath(__file__))
+app.config['UPLOAD_FOLDER'] = os.path.join(UPLOAD_BASE, 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 app.config['ALLOWED_EXTENSIONS'] = {'mp3', 'wav', 'm4a', 'flac'}
 
 # Maak uploads folder aan
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs('static/analysis_images', exist_ok=True)
+
+# Voor static images, gebruik /tmp op Vercel
+STATIC_IMAGES_BASE = '/tmp' if os.environ.get('VERCEL') else os.path.dirname(os.path.abspath(__file__))
+static_images_dir = os.path.join(STATIC_IMAGES_BASE, 'static', 'analysis_images')
+os.makedirs(static_images_dir, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -70,7 +77,13 @@ def upload_file():
                 result.get('camelot', ''), result.get('phrases', {})
             )
             
-            result['visualization'] = url_for('static', filename=f'analysis_images/{Path(img_path).name}')
+            # Genereer URL voor visualisatie
+            if os.environ.get('VERCEL'):
+                # Op Vercel: gebruik een speciale route om images te serveren
+                result['visualization'] = url_for('serve_image', filename=Path(img_path).name)
+            else:
+                # Lokaal: gebruik static folder
+                result['visualization'] = url_for('static', filename=f'analysis_images/{Path(img_path).name}')
             result['filename'] = filename
             
             return jsonify(result)
@@ -119,11 +132,28 @@ def create_visualization_pro(y, sr, energy, peak_times, filename, bpm, key, mode
     
     # Sla op
     img_filename = f"{Path(filename).stem}_pro_analysis.png"
-    img_path = os.path.join('static/analysis_images', img_filename)
+    STATIC_IMAGES_BASE = '/tmp' if os.environ.get('VERCEL') else os.path.dirname(os.path.abspath(__file__))
+    static_images_dir = os.path.join(STATIC_IMAGES_BASE, 'static', 'analysis_images')
+    os.makedirs(static_images_dir, exist_ok=True)
+    img_path = os.path.join(static_images_dir, img_filename)
     plt.savefig(img_path, dpi=150, bbox_inches='tight')
     plt.close()
     
     return img_path
+
+
+@app.route('/image/<filename>')
+def serve_image(filename):
+    """Serve images from /tmp op Vercel"""
+    if os.environ.get('VERCEL'):
+        STATIC_IMAGES_BASE = '/tmp'
+        img_path = os.path.join(STATIC_IMAGES_BASE, 'static', 'analysis_images', filename)
+        if os.path.exists(img_path):
+            return send_file(img_path, mimetype='image/png')
+        return jsonify({'error': 'Image not found'}), 404
+    else:
+        # Lokaal: gebruik normale static route
+        return send_from_directory('static/analysis_images', filename)
 
 
 @app.route('/results')

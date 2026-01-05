@@ -1,0 +1,32 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.vscode/
+.idea/
+*.log
+.DS_Store
+
+# Exclude large folders
+uploads/
+static/analysis_images/
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.png
+*.jpg
+*.jpeg
+
+# Exclude example/test files
+example_usage.py
+ACCURACY_INFO.md
+VERCEL_DEPLOYMENT.md
+
