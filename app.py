@@ -15,7 +15,10 @@ matplotlib.use('Agg')  # Non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 
-app = Flask(__name__)
+app = Flask(__name__, 
+            static_folder='static',
+            static_url_path='/static',
+            template_folder='templates')
 
 # Gebruik /tmp op Vercel (serverless), anders 'uploads'
 UPLOAD_BASE = '/tmp' if os.environ.get('VERCEL') else os.path.dirname(os.path.abspath(__file__))
@@ -189,6 +192,21 @@ def get_tracks():
     return jsonify(results)
 
 
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Endpoint not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal server error'}), 500
+
+# Health check endpoint voor Railway
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok', 'message': 'Music Analyzer is running'}), 200
+
+
 if __name__ == '__main__':
     # Gebruik PORT environment variable (Railway/Render) of default naar 5001
     port = int(os.environ.get('PORT', 5001))
@@ -197,7 +215,15 @@ if __name__ == '__main__':
     print("\n" + "="*50)
     print("🎵 Music Analyzer Web Interface")
     print("="*50)
-    print(f"Open je browser en ga naar: http://localhost:{port}")
+    print(f"Server starting on port {port}")
+    print(f"Debug mode: {debug}")
+    print(f"Static folder: {app.static_folder}")
+    print(f"Template folder: {app.template_folder}")
     print("="*50 + "\n")
-    app.run(debug=debug, host='0.0.0.0', port=port)
+    
+    try:
+        app.run(debug=debug, host='0.0.0.0', port=port)
+    except Exception as e:
+        print(f"Error starting server: {e}")
+        raise
 
