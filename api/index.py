@@ -2,11 +2,20 @@
 Vercel serverless function voor Music Analyzer
 """
 import os
+import sys
 import json
 import base64
 import tempfile
 from pathlib import Path
 from io import BytesIO
+
+# Voeg parent directory toe aan Python path voor imports
+# Dit is nodig omdat api/index.py in een subdirectory staat
+current_dir = Path(__file__).parent
+parent_dir = current_dir.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
 from werkzeug.utils import secure_filename
 from music_analyzer_pro import analyze_track_pro
 import matplotlib

@@ -92,3 +92,4 @@ De applicatie is geoptimaliseerd om kosten laag te houden:
 - Alleen serverless function invocations
 - Gratis tier: 100GB bandwidth, 100GB-hours function execution
 
+
