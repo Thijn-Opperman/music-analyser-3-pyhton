@@ -1,13 +1,11 @@
 """
 Vercel serverless function voor Music Analyzer
+Vereenvoudigde versie - retourneert alleen: songnaam, BPM, key en duur
 """
 import os
 import sys
 import json
-import base64
-import tempfile
 from pathlib import Path
-from io import BytesIO
 
 # Voeg parent directory toe aan Python path voor imports
 # Dit is nodig omdat api/index.py in een subdirectory staat
@@ -17,12 +15,7 @@ if str(parent_dir) not in sys.path:
     sys.path.insert(0, str(parent_dir))
 
 from werkzeug.utils import secure_filename
-from music_analyzer_pro import analyze_track_pro
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import numpy as np
-import librosa
+from music_analyzer_simple import analyze_track_simple
 
 # Laad HTML template
 def load_template():
@@ -33,52 +26,6 @@ def load_template():
 def allowed_file(filename):
     allowed_extensions = {'mp3', 'wav', 'm4a', 'flac'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
-
-def create_visualization_pro_base64(y, sr, energy, peak_times, filename, bpm, key, mode='major', camelot='', phrases=None):
-    """Maak visualisatie en retourneer als base64 string"""
-    x_energy = np.linspace(0, len(y)/sr, len(energy))
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 8), height_ratios=[2, 1])
-    
-    # Bovenste plot
-    ax1.plot(np.linspace(0, len(y)/sr, len(y)), y, alpha=0.3, color='#4A90E2', linewidth=0.5, label='Waveform')
-    ax1.plot(x_energy, energy, color='#E24A4A', linewidth=1.5, label='Energy')
-    ax1.scatter(peak_times, [0.5]*len(peak_times), color='#50C878', s=30, zorder=5, label='Peaks', alpha=0.7)
-    
-    if phrases:
-        colors = {'intro': '#FFD700', 'verse': '#87CEEB', 'chorus': '#FF6B6B', 'outro': '#9370DB'}
-        for phrase_type, segments in phrases.items():
-            for start, end in segments:
-                ax1.axvspan(start, end, alpha=0.2, color=colors.get(phrase_type, 'gray'))
-    
-    title = f'{Path(filename).stem} | BPM: {bpm} | Key: {key} {mode}'
-    if camelot:
-        title += f' | Camelot: {camelot}'
-    ax1.set_title(title, fontsize=14, fontweight='bold')
-    ax1.set_xlabel('Time (s)', fontsize=12)
-    ax1.set_ylabel('Amplitude / Energy', fontsize=12)
-    ax1.legend(loc='upper right', fontsize=9)
-    ax1.grid(True, alpha=0.3)
-    
-    # Onderste plot
-    ax2.fill_between(x_energy, energy, alpha=0.5, color='#E24A4A')
-    ax2.plot(x_energy, energy, color='#E24A4A', linewidth=1.5)
-    ax2.set_xlabel('Time (s)', fontsize=12)
-    ax2.set_ylabel('Energy', fontsize=12)
-    ax2.set_title('Energy Detail', fontsize=12)
-    ax2.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    
-    # Sla op in memory buffer
-    img_buffer = BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
-    plt.close()
-    
-    # Converteer naar base64
-    img_buffer.seek(0)
-    img_base64 = base64.b64encode(img_buffer.read()).decode('utf-8')
-    
-    return f"data:image/png;base64,{img_base64}"
 
 def parse_multipart(body, content_type):
     """Parse multipart form data - verbeterde versie"""
@@ -290,23 +237,8 @@ def handler(req):
                 f.write(file_content)
             
             try:
-                # Analyseer track
-                result = analyze_track_pro(filepath, visualize=False, export=False)
-                
-                # Laad audio voor visualisatie
-                y, sr = librosa.load(filepath, sr=44100)
-                energy = np.array(result['energy'])
-                peak_times = np.array(result['peaks'])
-                
-                # Maak visualisatie als base64
-                img_base64 = create_visualization_pro_base64(
-                    y, sr, energy, peak_times, filename,
-                    result['bpm'], result['key'], result.get('mode', 'major'),
-                    result.get('camelot', ''), result.get('phrases', {})
-                )
-                
-                result['visualization'] = img_base64
-                result['filename'] = filename
+                # Analyseer track (vereenvoudigd - alleen songnaam, BPM, key, duur)
+                result = analyze_track_simple(filepath)
                 
                 # Cleanup temp file
                 try:
