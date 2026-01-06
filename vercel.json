@@ -1,11 +1,9 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.py": {}
+  },
   "routes": [
-    {
-      "src": "/upload",
-      "dest": "/api/index.py",
-      "methods": ["POST", "OPTIONS"]
-    },
     {
       "src": "/static/(.*)",
       "dest": "/static/$1"
