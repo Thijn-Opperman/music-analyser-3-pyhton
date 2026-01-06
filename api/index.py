@@ -39,37 +39,39 @@ def parse_multipart(body, content_type):
     
     files = {}
     
-    # Split by boundary
-    parts = body.split(f'--{boundary}')
+    # Zorg dat body bytes is
+    if isinstance(body, str):
+        body = body.encode('latin-1')
+    
+    # Split by boundary (als bytes)
+    boundary_bytes = f'--{boundary}'.encode('utf-8')
+    parts = body.split(boundary_bytes)
     
     for part in parts:
+        # Zorg dat part bytes is
+        if isinstance(part, str):
+            part = part.encode('latin-1')
+        
         part = part.strip()
-        if not part or part == '--':
+        if not part or part == b'--':
             continue
         
-        # Find header/content separator
+        # Find header/content separator (zoek naar dubbele newline)
         header_end = -1
-        for sep in [b'\r\n\r\n', b'\n\n', '\r\n\r\n', '\n\n']:
-            if isinstance(part, bytes):
-                if sep.encode() in part:
-                    header_end = part.find(sep.encode())
-                    break
-            else:
-                if sep in part:
-                    header_end = part.find(sep)
-                    break
+        sep = None
+        for sep_candidate in [b'\r\n\r\n', b'\n\n']:
+            if sep_candidate in part:
+                header_end = part.find(sep_candidate)
+                sep = sep_candidate
+                break
         
-        if header_end == -1:
+        if header_end == -1 or sep is None:
             continue
         
         # Split headers and content
-        if isinstance(part, bytes):
-            headers_bytes = part[:header_end]
-            content = part[header_end + len(sep):]
-            headers_str = headers_bytes.decode('utf-8', errors='ignore')
-        else:
-            headers_str = part[:header_end]
-            content = part[header_end + len(sep):]
+        headers_bytes = part[:header_end]
+        content = part[header_end + len(sep):]
+        headers_str = headers_bytes.decode('utf-8', errors='ignore')
         
         # Parse headers
         headers = {}
@@ -102,19 +104,16 @@ def parse_multipart(body, content_type):
                         name = disp.split('name=')[1].split(';')[0].strip()
                     
                     # Clean up content (remove trailing boundary markers)
-                    if isinstance(content, bytes):
-                        # Remove trailing \r\n-- if present
-                        while content.endswith(b'\r\n--') or content.endswith(b'\n--'):
-                            if content.endswith(b'\r\n--'):
-                                content = content[:-4]
-                            elif content.endswith(b'\n--'):
-                                content = content[:-3]
-                    else:
-                        while content.endswith('\r\n--') or content.endswith('\n--'):
-                            if content.endswith('\r\n--'):
-                                content = content[:-4]
-                            elif content.endswith('\n--'):
-                                content = content[:-3]
+                    # Zorg dat content bytes is
+                    if isinstance(content, str):
+                        content = content.encode('latin-1')
+                    
+                    # Remove trailing \r\n-- if present
+                    while content.endswith(b'\r\n--') or content.endswith(b'\n--'):
+                        if content.endswith(b'\r\n--'):
+                            content = content[:-4]
+                        elif content.endswith(b'\n--'):
+                            content = content[:-3]
                     
                     files[name] = {
                         'filename': filename,
@@ -125,7 +124,7 @@ def parse_multipart(body, content_type):
     
     return files
 
-# Vercel entry point
+    # Vercel entry point
 def handler(req):
     """Vercel serverless function handler"""
     # Vercel geeft request als dictionary met specifieke velden
@@ -136,16 +135,17 @@ def handler(req):
         headers_req = req.get('headers', {})
         body = req.get('body', '')
         
-        # Als body base64 encoded is, decode het
+        # Als body base64 encoded is, decode het naar bytes
+        # Voor multipart/form-data hebben we bytes nodig
         if req.get('isBase64Encoded', False) and body:
             import base64
-            body = base64.b64decode(body).decode('utf-8', errors='ignore')
+            body = base64.b64decode(body)
     else:
         # Fallback voor andere formats
         method = 'GET'
         path = '/'
         headers_req = {}
-        body = ''
+        body = b''
     
     # CORS headers
     cors_headers = {
@@ -188,6 +188,15 @@ def handler(req):
                     },
                     'body': json.dumps({'error': 'Geen bestand geüpload'})
                 }
+            
+            # Zorg dat body bytes is voor multipart parsing
+            # Als body een string is (niet base64), probeer het als bytes te behandelen
+            if isinstance(body, str):
+                # Probeer eerst als utf-8, anders latin-1 (behoudt alle bytes)
+                try:
+                    body = body.encode('utf-8')
+                except:
+                    body = body.encode('latin-1')
             
             # Parse multipart data
             files = parse_multipart(body, content_type)
