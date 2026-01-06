@@ -1,0 +1,39 @@
+# Uploads folder - niet nodig op Vercel (gebruiken /tmp)
+uploads/
+*.mp3
+*.wav
+*.m4a
+*.flac
+
+# Analysis images - worden in-memory gegenereerd
+static/analysis_images/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test files
+test_*.py
+*_test.py
+

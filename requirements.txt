@@ -1,8 +1,14 @@
-librosa>=0.10.0
-numpy>=1.24.0
-scipy>=1.10.0
-matplotlib>=3.7.0
-pydub>=0.25.1
-flask>=2.3.0
-werkzeug>=2.3.0
+# Core audio processing
+librosa==0.10.1
+numpy==1.24.3
+scipy==1.11.4
+
+# Visualization
+matplotlib==3.8.2
+
+# Web framework (alleen werkzeug nodig voor Vercel, niet Flask)
+werkzeug==3.0.1
+
+# Note: Flask niet nodig voor Vercel serverless functions
+# pydub niet nodig als we alleen librosa gebruiken
 

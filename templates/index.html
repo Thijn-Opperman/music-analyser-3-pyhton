@@ -426,11 +426,14 @@
                 document.getElementById('phrasesValue').textContent = '-';
             }
 
-            // Visualisatie
+            // Visualisatie (ondersteunt zowel URL als base64)
             if (data.visualization) {
                 const img = document.createElement('img');
+                // Ondersteun zowel URL als base64 data URI
                 img.src = data.visualization;
                 img.alt = 'Track Visualisatie';
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
                 document.getElementById('visualization').innerHTML = '';
                 document.getElementById('visualization').appendChild(img);
             }
