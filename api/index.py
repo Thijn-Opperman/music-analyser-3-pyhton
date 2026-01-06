@@ -348,3 +348,7 @@ def handler(req):
         'body': json.dumps({'error': 'Route niet gevonden'})
     }
 
+# Vercel verwacht dat de handler functie direct beschikbaar is
+# Export de handler als default
+__all__ = ['handler']
+
