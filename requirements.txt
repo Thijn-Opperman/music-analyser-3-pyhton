@@ -3,10 +3,10 @@ librosa==0.10.1
 numpy==1.24.3
 scipy==1.11.4
 
-# Web framework (alleen werkzeug nodig voor Vercel, niet Flask)
+# Web framework
+Flask==3.0.0
 werkzeug==3.0.1
 
-# Note: Flask niet nodig voor Vercel serverless functions
-# matplotlib niet meer nodig - geen visualisaties meer
-# pydub niet nodig als we alleen librosa gebruiken
+# Visualisatie
+matplotlib==3.8.2
 

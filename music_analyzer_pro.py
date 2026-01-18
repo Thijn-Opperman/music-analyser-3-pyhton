@@ -398,42 +398,57 @@ def analyze_track_pro(filename, sample_rate=44100, visualize=True, export=True):
 
 def visualize_track_pro(y, sr, energy, peak_times, filename, bpm, key, mode, camelot, phrases):
     """
-    Verbeterde visualisatie met alle informatie
+    Verbeterde visualisatie met alle informatie en duidelijke waveform
     """
     x_energy = np.linspace(0, len(y)/sr, len(energy))
+    time_axis = np.linspace(0, len(y)/sr, len(y))
     
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 8), height_ratios=[2, 1])
+    # Maak 3 subplots: Waveform, Combined, Energy
+    fig = plt.figure(figsize=(16, 10))
+    gs = fig.add_gridspec(3, 1, height_ratios=[1.5, 2, 1], hspace=0.3)
     
-    # Bovenste plot: Waveform en energie
-    ax1.plot(np.linspace(0, len(y)/sr, len(y)), y, alpha=0.3, color='#4A90E2', linewidth=0.5, label='Waveform')
-    ax1.plot(x_energy, energy, color='#E24A4A', linewidth=1.5, label='Energy')
-    ax1.scatter(peak_times, [0.5]*len(peak_times), color='#50C878', s=30, zorder=5, label='Peaks', alpha=0.7)
+    # Plot 1: Duidelijke Waveform
+    ax1 = fig.add_subplot(gs[0])
+    ax1.plot(time_axis, y, color='#4A90E2', linewidth=0.8, alpha=0.9)
+    ax1.fill_between(time_axis, y, 0, alpha=0.3, color='#4A90E2')
+    ax1.set_ylabel('Amplitude', fontsize=12, fontweight='bold')
+    ax1.set_title('Waveform', fontsize=13, fontweight='bold', pad=10)
+    ax1.grid(True, alpha=0.3, linestyle='--')
+    ax1.set_xlim(0, len(y)/sr)
+    ax1.axhline(y=0, color='black', linewidth=0.5, alpha=0.3)
+    
+    # Plot 2: Combined view met waveform, energy en peaks
+    ax2 = fig.add_subplot(gs[1])
+    ax2.plot(time_axis, y, alpha=0.4, color='#4A90E2', linewidth=0.6, label='Waveform')
+    ax2.plot(x_energy, energy, color='#E24A4A', linewidth=2, label='Energy', zorder=3)
+    ax2.scatter(peak_times, [np.max(energy)*0.6]*len(peak_times), color='#50C878', s=50, zorder=5, label='Peaks', alpha=0.8, marker='v')
     
     # Markeer phrases
     colors = {'intro': '#FFD700', 'verse': '#87CEEB', 'chorus': '#FF6B6B', 'outro': '#9370DB'}
     for phrase_type, segments in phrases.items():
         for start, end in segments:
-            ax1.axvspan(start, end, alpha=0.2, color=colors.get(phrase_type, 'gray'), label=phrase_type.title())
+            ax2.axvspan(start, end, alpha=0.15, color=colors.get(phrase_type, 'gray'))
     
-    ax1.set_xlabel('Time (s)', fontsize=12)
-    ax1.set_ylabel('Amplitude / Energy', fontsize=12)
-    ax1.set_title(f'{filename} | BPM: {bpm} | Key: {key} {mode} | Camelot: {camelot}', 
-                  fontsize=14, fontweight='bold')
-    ax1.legend(loc='upper right', fontsize=9)
-    ax1.grid(True, alpha=0.3)
-    
-    # Onderste plot: Energie detail
-    ax2.fill_between(x_energy, energy, alpha=0.5, color='#E24A4A')
-    ax2.plot(x_energy, energy, color='#E24A4A', linewidth=1.5)
+    title = f'{filename} | BPM: {bpm} | Key: {key} {mode} | Camelot: {camelot}'
+    ax2.set_title(title, fontsize=14, fontweight='bold', pad=15)
     ax2.set_xlabel('Time (s)', fontsize=12)
-    ax2.set_ylabel('Energy', fontsize=12)
-    ax2.set_title('Energy Detail', fontsize=12)
+    ax2.set_ylabel('Amplitude / Energy', fontsize=12)
+    ax2.legend(loc='upper right', fontsize=10, framealpha=0.9)
     ax2.grid(True, alpha=0.3)
+    
+    # Plot 3: Energy detail
+    ax3 = fig.add_subplot(gs[2])
+    ax3.fill_between(x_energy, energy, alpha=0.6, color='#E24A4A')
+    ax3.plot(x_energy, energy, color='#E24A4A', linewidth=2)
+    ax3.set_xlabel('Time (s)', fontsize=12)
+    ax3.set_ylabel('Energy', fontsize=12, fontweight='bold')
+    ax3.set_title('Energy Detail', fontsize=13, fontweight='bold', pad=10)
+    ax3.grid(True, alpha=0.3, linestyle='--')
     
     plt.tight_layout()
     
     output_file = f"{filename}_pro_analysis.png"
-    plt.savefig(output_file, dpi=150, bbox_inches='tight')
+    plt.savefig(output_file, dpi=150, bbox_inches='tight', facecolor='white')
     print(f"🖼️  Visualisatie opgeslagen: {output_file}")
     plt.close()
 
